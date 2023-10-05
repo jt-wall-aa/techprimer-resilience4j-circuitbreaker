@@ -1,4 +1,5 @@
-package com.techprimers.circuitbreaker.controller;
+package com.aa.itfacs.examples.resilience4j.circuitbreaker.controller;
+
 
 import com.techprimers.circuitbreaker.model.Activity;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -23,9 +24,8 @@ public class ActivityController {
 
     private RestTemplate restTemplate;
 
-    // private final String BORED_API = "https://www.boredapi.com/api/activity";
-    private final String BORED_API = "http://localhost:8081/activity";
-
+    private final String BORED_API = "https://www.boredapi.com/api/activity";
+    private final String MOCK_SERVICE = "http://localhost:8081/activity";
 
     @Autowired
     private  CircuitBreakerRegistry circuitBreakerRegistry;
@@ -52,21 +52,34 @@ public class ActivityController {
             registerEventsOnCircuitBreaker();
         }
 
-        ResponseEntity<Activity> responseEntity = restTemplate.getForEntity(BORED_API, Activity.class);
-        Activity activity = responseEntity.getBody();
+       // Activity activity = getActivityFromBoredAPI();
+        Activity activity = getActivityFromMockService();
         log.info("Activity received: " + activity.getActivity());
         return activity.getActivity();
+    }
+
+    private Activity getActivityFromBoredAPI(){
+        ResponseEntity<Activity> responseEntity = restTemplate.getForEntity(BORED_API, Activity.class);
+        return responseEntity.getBody();
+    }
+
+    private Activity getActivityFromMockService(){
+        ResponseEntity<Activity> responseEntity = restTemplate.getForEntity(MOCK_SERVICE, Activity.class);
+        return responseEntity.getBody();
     }
 
     public String fallbackRandomActivity(Throwable throwable) {
 
         StringBuilder msg = new StringBuilder();
         String nl = System.lineSeparator();
-
+        log.info("Circuit breaker tripped.");
+        if(circuitBreaker != null) {
+            log.info("Circuit breaker in state of: " + circuitBreaker.getState());
+        }
         msg.append("Circuit breaker was tripped, and caught an exception of: ")
                 .append(throwable.getClass().descriptorString()).append(nl)
                 .append("message of: ").append(throwable.getMessage()).append(nl)
-                .append("Unable to reach dependency service bored.com.").append(nl)
+                .append("Unable to reach dependency service.").append(nl)
                 .append("Why don't you read more about Resilience4J instead.");
         return msg.toString();
     }
@@ -74,7 +87,7 @@ public class ActivityController {
     private void registerEventsOnCircuitBreaker()
     {
 
-     if(circuitBreaker != null) {
+        if(circuitBreaker != null) {
             log.info("Registering predicates for circuit breakers event publisher");
             circuitBreaker.getEventPublisher()
                     .onSuccess(event -> log.info("A successful event of " + event.toString() + " was received at " + Instant.now().toString()))

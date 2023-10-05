@@ -6,16 +6,29 @@ management:
   endpoints.web.exposure.include:
     - '*'
   endpoint.health.show-details: always
+  #this allows the management endpoint to see the circuitbreaker state
   health.circuitbreakers.enabled: true
 
+#circuitbreaker configurations
+#for more information visit https://resilience4j.readme.io/docs/circuitbreaker
 resilience4j.circuitbreaker:
   configs:
     default:
-      registerHealthIndicator: true
+      #these are all of the default values if you left off of the configurations
+      registerHealthIndicator: true #adds all circuit breakers to health check management
       slidingWindowSize: 10
       minimumNumberOfCalls: 5
       permittedNumberOfCallsInHalfOpenState: 3
       automaticTransitionFromOpenToHalfOpenEnabled: true
-      waitDurationInOpenState: 5s
-      failureRateThreshold: 50
+      waitDurationInOpenState: 60s   #default is 5s, changing here to better recognize changed state
+      failureRateThreshold: 50 #trips circuit open if half of requests or more fail
       eventConsumerBufferSize: 10
+      #slowCallRateThreshold: 100
+      #slowCallDurationThreshold: 60000  #Value in milliseconds. The value which the circuit breaker considers a call slow
+      #maxWaitDurationInHalfOpenState: 0 #Value in milliseconds. Value of 0 means the wait is infinite in Half-Open
+      #slidingWindowType: COUNT_BASED    #Alternative is TIME_BASED, and sliding window size is amount of seconds of window
+      #automaticTransitionFromOpenToHalfOpenEnabled: false
+      #recordExceptions: #default is an empty list
+      #ignoreExceptions: #default is an empty list
+      #recordFailurePredicate: #default is all exceptions count as failures otherwise a custom Predicate of throwable -> true/false
+      #ignoreExceptionPredicate: #default is no exception is ignored.
